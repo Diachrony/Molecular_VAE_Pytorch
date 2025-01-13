@@ -208,8 +208,7 @@ class VAE(nn.Module):
 		log_sigma = self._enc_log_sigma(h_enc)
 		sigma = torch.exp(log_sigma)
 
-		std_z = torch.randn(sigma.size()).float()
-		
+		std_z = torch.randn(sigma.size(), device=self.device).float()		
 		self.z_mean = mu
 		self.z_sigma = sigma
 
