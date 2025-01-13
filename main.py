@@ -7,6 +7,7 @@ import torch
 import torch.optim as optim
 import argparse
 import random
+import os
 
 
 NUM_EPOCHS = 30
@@ -47,7 +48,10 @@ def main():
 
     device = 'cuda:'+str(args.gpu) if torch.cuda.is_available() else 'cpu'
 
-    data = pd.read_csv(args.data)
+    data_orig = pd.read_csv(args.data)
+
+    # Get fraction of data
+    data = data_orig.sample(frac=1.0, random_state=42)
 
     smiles = data[SMILES_COL_NAME]
     #labels = np.array(data['p_np'])
@@ -96,12 +100,12 @@ def main():
     if use_vae:
         ##Using Molecular VAE Arch as in the Paper with Conv Encoder and GRU Decoder
         enc = Conv_Encoder(vocab_size).to(device)
-        dec = GRU_Decoder(vocab_size,latent_dim).to(device)
-        model = Molecule_VAE(enc, dec,device,latent_dim).to(device)
+        dec = GRU_Decoder(vocab_size, args.latent_dim).to(device)
+        model = Molecule_VAE(enc, dec,device, args.latent_dim).to(device)
         model.get_num_params()
     else:
         #Using FC layers for both Encoder and Decoder
-        input_dim = 120 * 71
+        input_dim = 120 * vocab_size
         hidden_dim = 200
         hidden_2 = 120
         latent = 60
@@ -122,16 +126,18 @@ def main():
                                     patience = 3,
                                     min_lr = 0.0001)
 
+    print("Input Shape:", X_train.shape)
+
     dataloader = torch.utils.data.DataLoader(X_train, 
                                             batch_size=args.batch_size,
                                             shuffle=True, 
-                                            num_workers=6,
+                                            num_workers=0,
                                             drop_last = True)
 
     val_dataloader = torch.utils.data.DataLoader(X_test, 
                                             batch_size=args.batch_size,
                                             shuffle=True, 
-                                            num_workers=6,
+                                            num_workers=0,
                                             drop_last = True)
 
     best_epoch_loss_val = 100000
@@ -145,14 +151,21 @@ def main():
         print("Epoch -- {}".format(epoch))
         
         for i, data in enumerate(dataloader):
-            
+
+            # Helper matching size function
+            def match_shapes(input_recon, inputs):
+                if input_recon.shape != inputs.shape:
+                    return inputs.view(input_recon.size())
+                return inputs
+
             inputs = data.float().to(device)
             #inputs = inputs.reshape(batch_size, -1).float()
             optimizer.zero_grad()
 
             input_recon = model(inputs)
             latent_loss_val = latent_loss(model.z_mean, model.z_sigma)
-            loss = F.binary_cross_entropy(input_recon, inputs, size_average=False) + latent_loss_val
+            inputs_matched = match_shapes(input_recon, inputs)
+            loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs_matched, reduction='sum') + latent_loss_val
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
@@ -169,6 +182,8 @@ def main():
         print("Output -- ",onehot_to_smiles(input_recon[data_point_sampled].reshape(1, 120, len(vocab)).cpu().detach(), inv_dict))
         
         #####################Validation Phase
+        # Helper matching size function
+
         epoch_loss_val = 0
         for i, data in enumerate(val_dataloader):
             
@@ -176,8 +191,10 @@ def main():
             #inputs = inputs.reshape(batch_size, -1).float()
             input_recon = model(inputs)
             latent_loss_val = latent_loss(model.z_mean, model.z_sigma)
-            loss = F.binary_cross_entropy(input_recon, inputs, size_average=False) + latent_loss_val
-            epoch_loss_val += loss.item()
+            
+        inputs_matched = match_shapes(input_recon, inputs)
+        loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs_matched, reduction='sum') + latent_loss_val
+        epoch_loss_val += loss.item()
         print("Validation Loss -- {:.3f}".format(epoch_loss_val/x_val_data_per_epoch))
         print()
         scheduler.step(epoch_loss_val)
@@ -191,10 +208,13 @@ def main():
                     'dict':vocab,
                     'inv_dict':inv_dict,
                     }
+        
+        if not os.path.exists(args.save_loc):
+            os.makedirs(args.save_loc)
 
         #Saves when loss is lower than best validation loss till now and all models after 100 epochs
-       	if epoch_loss_recon_val < best_epoch_loss_val or epoch > 100:
-			torch.save(checkpoint, args.save_loc+'/'+str(epoch)+'checkpoint.pth')
+        if epoch_loss_val < best_epoch_loss_val or epoch > 100:
+            torch.save(checkpoint, args.save_loc+'/'+str(epoch)+'checkpoint.pth')
         #update best epoch loss
         best_epoch_loss_val = min(epoch_loss_val, best_epoch_loss_val)
     #evaluate(model, X_train, vocab, inv_dict)

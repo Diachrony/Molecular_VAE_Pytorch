@@ -1,12 +1,16 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn import init
 import numpy as np
+import random
 
 
 class Conv_Encoder(nn.Module):
 	def __init__(self, vocab_len):
 		super(Conv_Encoder,self).__init__()
+
+		self.vocab_len = vocab_len
 
 		self.conv_1 = nn.Conv1d(120, 9, kernel_size=9)
 		self.conv_2 = nn.Conv1d(9, 9, kernel_size=9)
@@ -25,11 +29,14 @@ class Conv_Encoder(nn.Module):
 		return x
 	
 class GRU_Decoder(nn.Module):
-	def __init__(self, vocab_size,latent_dim):
+	def __init__(self, vocab_size,latent_dim, num_layers=3):
 		super(GRU_Decoder,self).__init__()
 		#self.fc_1 = nn.Linear(292, 292)
-		self.gru = nn.GRU(latent_dim, 501, 3, batch_first=True)
-		self.fc_2 = nn.Linear(501, vocab_size)
+		self.num_layers = num_layers
+		self.embed = nn.Embedding(vocab_size, latent_dim)
+
+		self.gru = nn.GRU(latent_dim, latent_dim, 3, batch_first=True)
+		self.fc_2 = nn.Linear(latent_dim, vocab_size)
 		self.relu = nn.ReLU()
 		self.softmax = nn.Softmax()
 	
@@ -39,13 +46,13 @@ class GRU_Decoder(nn.Module):
 		z_out, hidden = self.gru(z, hidden)
 		z_out = z_out.contiguous().reshape(-1, z_out.shape[-1])
 		#x_recon = F.softmax(self.fc_2(z_out), dim=1)
-		x_recon = self.fc_1(z_out)
+		x_recon = self.fc_2(z_out)
 		x_recon = x_recon.contiguous().reshape(batch_size, -1, x_recon.shape[-1])
 		
 		return x_recon, hidden
 
 class Molecule_VAE(nn.Module):
-	def __init__(self,encoder,decoder,device,latent_dim):
+	def __init__(self,encoder,decoder,device,latent_dim, teacher_forcing_ratio=0.5):
 		super(Molecule_VAE,self).__init__()
 		
 		self.encoder = encoder.to(device)
@@ -60,6 +67,8 @@ class Molecule_VAE(nn.Module):
 		#self.hidden_dim = self.encoder.hidden_dim
 		self.relu = nn.ReLU()
 		self.device = device
+
+		self.teacher_forcing_ratio = teacher_forcing_ratio
 
 		self._enc_mu = nn.Linear(435,latent_dim)
 		self._enc_log_sigma = nn.Linear(435,latent_dim)
@@ -100,8 +109,7 @@ class Molecule_VAE(nn.Module):
 
 			#Teacher Forcing 
 			if random.random()<self.teacher_forcing_ratio:
-			    input = x[:,t,:].argmax(1)
-			
+				input = x[:,t,:].argmax(1)
 			else:
 				input = top1.squeeze(1).detach()  #If this detach is left out the computational graph is retained.
 		return outputs
@@ -109,7 +117,7 @@ class Molecule_VAE(nn.Module):
 	def forward(self, x):
 		"""Forward Function which passes the data through entire model"""
 		self.h_enc = self.encoder(x)
-		z = self._sample_latent(h_enc)
+		z = self._sample_latent(self.h_enc)
 	
 		recon_x = self.forward_decoder(z,x)
 		return recon_x
@@ -160,6 +168,7 @@ class Encoder(nn.Module):
 		self.hidden_dim_2 = hidden_dim_2
 		
 	def forward(self, x):
+		x = x.view(x.size(0), -1) 
 		z = F.relu(self.linear2(F.relu(self.linear1(x))))
 		return z
 

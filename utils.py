@@ -140,11 +140,11 @@ def onehot_to_smiles(onehot, inv_vocab):
 
 def get_mol(smiles):
 	"""Returns SMILES String in RDKit molecule format"""
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return None
-    Chem.Kekulize(mol)
-    return mol
+	mol = Chem.MolFromSmiles(smiles)
+	if mol is None:
+		return None
+	Chem.Kekulize(mol)
+	return mol
 
 
 def add_img(onehot, inv_vocab, name):
