@@ -111,7 +111,7 @@ def main():
         latent = 60
         enc = Encoder(input_dim,hidden_dim,hidden_2, device).to(device)
         dec = Decoder(input_dim,hidden_dim,latent)
-        model = VAE(enc,dec,latent).to(device)
+        model = VAE(enc,dec,latent, device).to(device)
         model.get_num_params()
 
     #TODO: Add loading function

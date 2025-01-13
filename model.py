@@ -186,8 +186,9 @@ class Decoder(torch.nn.Module):
 
 class VAE(nn.Module):
 	
-	def __init__(self, encoder, decoder,latent_dim):
+	def __init__(self, encoder, decoder,latent_dim, device):
 		super(VAE, self).__init__()
+		self.device = device
 		self.encoder = encoder
 		self.decoder = decoder
 		self.latent_dim = latent_dim
