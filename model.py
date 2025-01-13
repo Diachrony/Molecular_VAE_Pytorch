@@ -166,6 +166,7 @@ class Encoder(nn.Module):
 		self.linear2 = nn.Linear(hidden_dim,hidden_dim_2)
 		self.hidden_dim = hidden_dim
 		self.hidden_dim_2 = hidden_dim_2
+		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 		
 	def forward(self, x):
 		x = x.view(x.size(0), -1).to(self.device)
@@ -213,7 +214,7 @@ class VAE(nn.Module):
 		return mu + sigma * std_z  # Reparameterization trick
 
 	def forward(self, state):
-		h_enc = self.encoder(state)
+		h_enc = self.encoder(state.to(self.device))
 		z = self._sample_latent(h_enc)
 		recon_x = self.decoder(z)
 		return recon_x
