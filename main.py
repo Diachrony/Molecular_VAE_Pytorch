@@ -109,7 +109,7 @@ def main():
         hidden_dim = 200
         hidden_2 = 120
         latent = 60
-        enc = Encoder(input_dim,hidden_dim,hidden_2)
+        enc = Encoder(input_dim,hidden_dim,hidden_2, device).to(device)
         dec = Decoder(input_dim,hidden_dim,latent)
         model = VAE(enc,dec,latent).to(device)
         model.get_num_params()

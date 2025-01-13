@@ -160,15 +160,17 @@ def init_weights(m):
 ##############################################################################################
 
 class Encoder(nn.Module):
-	def __init__(self,input_dim,hidden_dim,hidden_dim_2):
+	def __init__(self,input_dim,hidden_dim,hidden_dim_2, device):
 		super(Encoder,self).__init__()
 		self.linear1 = nn.Linear(input_dim,hidden_dim)
 		self.linear2 = nn.Linear(hidden_dim,hidden_dim_2)
 		self.hidden_dim = hidden_dim
 		self.hidden_dim_2 = hidden_dim_2
+		self.device = device
+
 		
 	def forward(self, x):
-		x = x.view(x.size(0), -1)
+		x = x.view(x.size(0), -1).to(self.device)
 		z = F.relu(self.linear2(F.relu(self.linear1(x))))
 		return z
 
