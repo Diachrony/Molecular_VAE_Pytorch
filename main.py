@@ -51,7 +51,7 @@ def main():
     data_orig = pd.read_csv(args.data)
 
     # Get fraction of data
-    data = data_orig.sample(frac=0.05, random_state=42)
+    data = data_orig.sample(frac=1.0, random_state=42)
 
     smiles = data[SMILES_COL_NAME]
     #labels = np.array(data['p_np'])
