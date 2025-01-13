@@ -253,6 +253,8 @@ if __name__ == '__main__':
 	enc = Conv_Encoder(vocab_size)
 	dec = GRU_Decoder(vocab_size)
 
+	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 	model = Molecule_VAE(enc, dec, device)
 
 	ex_input = torch.randn(1,120,71)
