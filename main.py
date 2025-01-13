@@ -222,6 +222,9 @@ def main():
 
 def evaluate(model, X_train, vocab, inv_dict):
     print("IN EVALUATION PHASE")
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     pretrained = torch.load(EVAL_PATH, map_location=lambda storage, loc: storage)
     #torch.load('./Save_Models/189checkpoint.pth',map_location=torch.device('cpu'))
     dataloader = torch.utils.data.DataLoader(X_train, 
