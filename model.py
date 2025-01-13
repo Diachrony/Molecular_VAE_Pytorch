@@ -116,9 +116,9 @@ class Molecule_VAE(nn.Module):
 
 	def forward(self, x):
 		"""Forward Function which passes the data through entire model"""
+		x = x.to(self.device)
 		self.h_enc = self.encoder(x)
 		z = self._sample_latent(self.h_enc)
-	
 		recon_x = self.forward_decoder(z,x)
 		return recon_x
 
@@ -169,7 +169,7 @@ class Encoder(nn.Module):
 		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 		
 	def forward(self, x):
-		x = x.view(x.size(0), -1).to(self.device)
+		x = x.view(x.size(0), -1)
 		z = F.relu(self.linear2(F.relu(self.linear1(x))))
 		return z
 
