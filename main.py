@@ -162,7 +162,7 @@ def main():
             #inputs = inputs.reshape(batch_size, -1).float()
             optimizer.zero_grad()
 
-            input_recon = model(inputs)
+            input_recon = model(inputs).to(device)
             latent_loss_val = latent_loss(model.z_mean, model.z_sigma)
             inputs_matched = match_shapes(input_recon, inputs)
             loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs_matched, reduction='sum') + latent_loss_val
@@ -189,7 +189,7 @@ def main():
             
             inputs = data.to(device).float()
             #inputs = inputs.reshape(batch_size, -1).float()
-            input_recon = model(inputs)
+            input_recon = model(inputs).to(device)
             latent_loss_val = latent_loss(model.z_mean, model.z_sigma)
             
         inputs_matched = match_shapes(input_recon, inputs)
@@ -234,7 +234,7 @@ def evaluate(model, X_train, vocab, inv_dict):
                                             drop_last = True)
     for i, data in enumerate(dataloader):
         inputs = data.float().to(device)
-        input_recon = model(inputs)        
+        input_recon = model(inputs).to(device)        
         print(i)
         print("Input -- ",onehot_to_smiles(inputs[0].reshape(1, 120, len(vocab)).cpu().detach(), inv_dict))
         print("Output -- ",onehot_to_smiles(input_recon[0].reshape(1, 120, len(vocab)).cpu().detach(), inv_dict))

@@ -42,8 +42,8 @@ class GRU_Decoder(nn.Module):
 	
 	def forward(self, z, hidden):
 		batch_size = z.shape[0]
-		z = self.embed(z.long()).unsqueeze(1)
-		z_out, hidden = self.gru(z, hidden)
+		z = self.embed(z.long()).unsqueeze(1).to(self.device)
+		z_out, hidden = self.gru(z, hidden.to(self.device))
 		z_out = z_out.contiguous().reshape(-1, z_out.shape[-1])
 		#x_recon = F.softmax(self.fc_2(z_out), dim=1)
 		x_recon = self.fc_2(z_out)
@@ -75,9 +75,9 @@ class Molecule_VAE(nn.Module):
 		
 	def _sample_latent(self, h_enc):
 		"""Return the latent normal sample z ~ N(mu, sigma^2)"""
-		mu = self._enc_mu(h_enc)
-		log_sigma = self._enc_log_sigma(h_enc)
-		sigma = torch.exp(0.5*log_sigma)
+		mu = self._enc_mu(h_enc).to(self.device)
+		log_sigma = self._enc_log_sigma(h_enc).to(self.device)
+		sigma = torch.exp(0.5*log_sigma).to(self.device)
 
 		eps = torch.randn_like(sigma).float().to(self.device)
 		
@@ -94,7 +94,7 @@ class Molecule_VAE(nn.Module):
 		outputs = torch.zeros(batch_size,trg_len,self.encoder.vocab_len).to(self.device)
 		outputs[:,0,2] = 1     #Intial Output is <STR> Token
 
-		hidden = Z.unsqueeze(0).repeat(self.decoder.num_layers,1,1)
+		hidden = Z.unsqueeze(0).repeat(self.decoder.num_layers,1,1).to(self.device)
 
 		input = torch.ones(batch_size).to(self.device)*2
 		
@@ -168,7 +168,7 @@ class Encoder(nn.Module):
 		self.hidden_dim_2 = hidden_dim_2
 		
 	def forward(self, x):
-		x = x.view(x.size(0), -1) 
+		x = x.view(x.size(0), -1).to(self.device)
 		z = F.relu(self.linear2(F.relu(self.linear1(x))))
 		return z
 
