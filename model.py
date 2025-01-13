@@ -166,7 +166,6 @@ class Encoder(nn.Module):
 		self.linear2 = nn.Linear(hidden_dim,hidden_dim_2)
 		self.hidden_dim = hidden_dim
 		self.hidden_dim_2 = hidden_dim_2
-		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 		
 	def forward(self, x):
 		x = x.view(x.size(0), -1)
