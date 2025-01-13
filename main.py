@@ -51,7 +51,7 @@ def main():
     data_orig = pd.read_csv(args.data)
 
     # Get fraction of data
-    data = data_orig.sample(frac=1.0, random_state=42)
+    data = data_orig.sample(frac=0.05, random_state=42)
 
     smiles = data[SMILES_COL_NAME]
     #labels = np.array(data['p_np'])
@@ -152,20 +152,16 @@ def main():
         
         for i, data in enumerate(dataloader):
 
-            # Helper matching size function
-            def match_shapes(input_recon, inputs):
-                if input_recon.shape != inputs.shape:
-                    return inputs.view(input_recon.size())
-                return inputs
-
             inputs = data.float().to(device)
             #inputs = inputs.reshape(batch_size, -1).float()
             optimizer.zero_grad()
 
             input_recon = model(inputs).to(device)
             latent_loss_val = latent_loss(model.z_mean, model.z_sigma)
-            inputs_matched = match_shapes(input_recon, inputs)
-            loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs_matched, reduction='sum') + latent_loss_val
+            if args.model_type == 'mol_vae':
+                loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs, reduction='sum') + latent_loss_val
+            elif args.model_type == 'fc':
+                loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs.view(inputs.size(0), -1), reduction='sum') + latent_loss_val
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
@@ -192,8 +188,10 @@ def main():
             input_recon = model(inputs).to(device)
             latent_loss_val = latent_loss(model.z_mean, model.z_sigma)
             
-        inputs_matched = match_shapes(input_recon, inputs)
-        loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs_matched, reduction='sum') + latent_loss_val
+        if args.model_type == 'mol_vae':
+            loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs, reduction='sum') + latent_loss_val
+        elif args.model_type == 'fc':
+            loss = F.binary_cross_entropy(torch.sigmoid(input_recon), inputs.view(inputs.size(0), -1), reduction='sum') + latent_loss_val
         epoch_loss_val += loss.item()
         print("Validation Loss -- {:.3f}".format(epoch_loss_val/x_val_data_per_epoch))
         print()
