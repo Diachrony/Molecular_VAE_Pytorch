@@ -29,7 +29,7 @@ class Conv_Encoder(nn.Module):
 		return x
 	
 class GRU_Decoder(nn.Module):
-	def __init__(self, vocab_size,latent_dim, num_layers=3):
+	def __init__(self, vocab_size,latent_dim, device, num_layers=3):
 		super(GRU_Decoder,self).__init__()
 		#self.fc_1 = nn.Linear(292, 292)
 		self.num_layers = num_layers
@@ -39,6 +39,8 @@ class GRU_Decoder(nn.Module):
 		self.fc_2 = nn.Linear(latent_dim, vocab_size)
 		self.relu = nn.ReLU()
 		self.softmax = nn.Softmax()
+
+		self.device = device
 	
 	def forward(self, z, hidden):
 		batch_size = z.shape[0]

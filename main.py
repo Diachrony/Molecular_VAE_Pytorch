@@ -100,7 +100,7 @@ def main():
     if use_vae:
         ##Using Molecular VAE Arch as in the Paper with Conv Encoder and GRU Decoder
         enc = Conv_Encoder(vocab_size).to(device)
-        dec = GRU_Decoder(vocab_size, args.latent_dim).to(device)
+        dec = GRU_Decoder(vocab_size, args.latent_dim, device).to(device)
         model = Molecule_VAE(enc, dec,device, args.latent_dim).to(device)
         model.get_num_params()
     else:
@@ -127,6 +127,8 @@ def main():
                                     min_lr = 0.0001)
 
     print("Input Shape:", X_train.shape)
+    print("Training SMILES example:", X_train[0])
+    print("Validation SMILES example:", X_test[0])
 
     dataloader = torch.utils.data.DataLoader(X_train, 
                                             batch_size=args.batch_size,
