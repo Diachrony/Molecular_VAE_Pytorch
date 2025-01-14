@@ -1,4 +1,4 @@
-# Fork of A PyTorch implementation of Molecular VAE paper
+# Fork of A PyTorch implementation of Molecular VAE paper Functional as of Jan 2025 but model performs very poorly. 
 ## Fixes listed at end of readme 
 
 
